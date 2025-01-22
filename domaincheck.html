@@ -1,0 +1,84 @@
+<head>
+  <!-- Link to Google Fonts for Roboto font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+  <style>
+    h1 {
+      font-family: 'Roboto', Arial, sans-serif;
+      font-weight: 300;
+    }
+    p {
+      font-family: 'Roboto', Arial, sans-serif;
+      font-weight: 300;
+    }
+    button {
+      padding: 17px 40px;
+      border-radius: 50px;
+      cursor: pointer;
+      border: 0;
+      background-color: white;
+      box-shadow: rgb(0 0 0 / 5%) 0 0 8px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-size: 15px;
+      transition: all 0.5s ease;
+    }
+
+    button:hover {
+      letter-spacing: 3px;
+      background-color: hsl(261deg 80% 48%);
+      color: hsl(0, 0%, 100%);
+      box-shadow: rgb(93 24 220) 0px 7px 29px 0px;
+    }
+
+    button:active {
+      letter-spacing: 3px;
+      background-color: hsl(261deg 80% 48%);
+      color: hsl(0, 0%, 100%);
+      box-shadow: rgb(93 24 220) 0px 0px 0px 0px;
+      transform: translateY(10px);
+      transition: 100ms;
+    }
+  </style>
+</head>
+
+<body>
+  <p>Check this domain.</p>
+  
+</body>
+
+
+    <script>
+        function checkAWSSDK() {
+            if (typeof AWS === 'undefined') {
+                document.getElementById('result').innerHTML = `
+                    AWS SDK not found. Please install the AWS SDK by following these instructions:
+                    <pre>
+                    1. Open a terminal
+                    2. Run: npm install aws-sdk
+                    3. Come back again after doing these steps
+                    </pre>
+                `;
+                return false;
+            }
+            return true;
+        }
+
+        document.getElementById('domainForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!checkAWSSDK()) {
+                return;
+            }
+            AWS.config.update({region: 'us-east-1'});
+            var route53 = new AWS.Route53Domains({apiVersion: '2014-05-15'});
+            const domain = document.getElementById('domain').value;
+            const params = {
+                DomainName: domain,
+            };
+            try {
+                const data = await route53.checkDomainAvailability(params).promise();
+                document.getElementById('result').textContent = data.Availability;
+            } catch (err) {
+                document.getElementById('result').textContent = 'Error: ' + err.message;
+            }
+        });
+    </script>
