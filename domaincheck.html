@@ -64,15 +64,12 @@
     <!-- Embedded Python Code using Pyodide -->
     <script type="text/javascript">
         async function loadPyodideAndRun() {
-            // Wait until Pyodide is loaded
             let pyodide = await loadPyodide();
             
-            // Create a Python function to check domain
             let pythonCode = `
 import re
 
 def check_domain(domain):
-    # Simple regex to check domain validity
     pattern = r"^[a-zA-Z0-9.-]+$"
     if re.match(pattern, domain):
         return f"Domain '{domain}' is valid!"
@@ -80,110 +77,44 @@ def check_domain(domain):
         return "Invalid domain."
             `;
             
-            // Run the Python code to create the function
             pyodide.runPython(pythonCode);
             
-            // Bind to the form submission
-            document.getElementById('domainForm').onsubmit = function (e) {
+            document.getElementById('domainForm').onsubmit = async function (e) {
                 e.preventDefault();
                 const domain = document.getElementById('domain').value;
                 
-                // Call the Python function from JavaScript
                 let result = pyodide.runPython(`check_domain('${domain}')`);
-                
-                // Display result
                 document.getElementById('result').textContent = result;
                 
-                // If domain is valid, show the "Use This Domain" button
                 if (result.includes('valid')) {
                     document.getElementById('useDomainButton').style.display = 'inline-block';
                     
-                    // Set up the "Use This Domain" button action
-                    document.getElementById('useDomainButton').onclick = function () {
-                    alert(`You have selected: ${domain}`);
-                    console.log('Lets setup your domain!');
-                    alert(`You will never see this setup AGAIN! ${domain} will be yours forever`);
-                    // Create a container div
-                    const container = document.createElement('div');
-                    container.style.textAlign = 'center';
-                    container.style.margin = '20px';
-                
-                    // Create a heading
-                    const heading = document.createElement('h2');
-                    heading.innerText = 'Change DNS and Host Domain';
-                    container.appendChild(heading);
-                
-                    // Create input for domain
-                    const domainLabel = document.createElement('label');
-                    domainLabel.innerText = 'Enter your Domain:';
-                    container.appendChild(domainLabel);
-                
-                    const domainInput = document.createElement('input');
-                    domainInput.type = 'text';
-                    domainInput.placeholder = 'Confirm domain again (e.g., example.com), and recieve your free domain.';
-                    container.appendChild(domainInput);
-                
-                    container.appendChild(document.createElement('br'));
-                
-                    // Create input for DNS server
-                    const dnsLabel = document.createElement('label');
-                    dnsLabel.innerText = 'Enter DNS Server:';
-                    container.appendChild(dnsLabel);
-                
-                    const dnsInput = document.createElement('input');
-                    dnsInput.type = 'text';
-                    dnsInput.placeholder = 'Enter DNS (e.g., 8.8.8.8)';
-                    container.appendChild(dnsInput);
-                
-                    container.appendChild(document.createElement('br'));
-                
-                    // Create the button
-                    const button = document.createElement('button');
-                    button.innerText = 'Host Domain';
-                    button.style.padding = '10px 20px';
-                    button.style.fontSize = '16px';
-                    button.style.cursor = 'pointer';
-                    button.style.backgroundColor = '#4CAF50';
-                    button.style.color = 'white';
-                    button.style.border = 'none';
-                    button.style.borderRadius = '5px';
-                
-                    // Button hover effect
-                    button.addEventListener('mouseover', () => {
-                        button.style.backgroundColor = '#45a049';
-                    });
-                
-                    button.addEventListener('mouseout', () => {
-                        button.style.backgroundColor = '#4CAF50';
-                    });
-                
-                    // Add the button to the container
-                    container.appendChild(button);
-                
-                    // Append the container to the body
-                    document.body.appendChild(container);
-                
-                    // Handle the button click
-                    button.addEventListener('click', function() {
-                        const domain = domainInput.value;
-                        const dns = dnsInput.value;
-                
-                        if (domain && dns) {
-                            alert(`You have selected the domain: ${domain}`);
-                            console.log('Setting up DNS...');
-                            alert(`You are hosting the domain: ${domain} with DNS server: ${dns}`);
-                
-                            // Normally here you would call your backend service to set DNS and host the domain
-                            console.log('Domain hosting setup complete!');
-                        } else {
-                            alert('Please fill in both the domain and DNS server fields!');
+                    document.getElementById('useDomainButton').onclick = async function () {
+                        alert(`You have selected: ${domain}`);
+                        console.log('Let\'s set up your domain!');
+                        
+                        try {
+                            let response = await fetch('https://<your-aws-server>/api/create-domain', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ domain: domain })
+                            });
+                            
+                            if (response.ok) {
+                                let data = await response.json();
+                                alert(`Domain '${domain}' created successfully!`);
+                                console.log(data);
+                            } else {
+                                alert('Failed to create the domain. Please try again.');
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('An error occurred. Please try again.');
                         }
-                    });
-                }
-
-// Call the function to create the UI
-createDomainSetupUI();
-
+                        
+                        createDomainSetupUI(domain);
                     };
                 } else {
                     document.getElementById('useDomainButton').style.display = 'none';
@@ -191,7 +122,104 @@ createDomainSetupUI();
             };
         }
 
-        // Load Pyodide and execute the function when the page loads
+        function createDomainSetupUI(domain) {
+            const container = document.createElement('div');
+            container.style.textAlign = 'center';
+            container.style.margin = '20px';
+        
+            const heading = document.createElement('h2');
+            heading.innerText = 'Change DNS and Host Domain';
+            container.appendChild(heading);
+        
+            const domainLabel = document.createElement('label');
+            domainLabel.innerText = 'Enter your Domain:';
+            container.appendChild(domainLabel);
+        
+            const domainInput = document.createElement('input');
+            domainInput.type = 'text';
+            domainInput.placeholder = `Confirm domain again (e.g., ${domain})`;
+            container.appendChild(domainInput);
+        
+            container.appendChild(document.createElement('br'));
+        
+            const dnsLabel = document.createElement('label');
+            dnsLabel.innerText = 'Enter DNS Server:';
+            container.appendChild(dnsLabel);
+        
+            const dnsInput = document.createElement('input');
+            dnsInput.type = 'text';
+            dnsInput.placeholder = 'Enter DNS (e.g., 8.8.8.8)';
+            container.appendChild(dnsInput);
+        
+            container.appendChild(document.createElement('br'));
+
+            const hostedZoneLabel = document.createElement('label');
+            hostedZoneLabel.innerText = 'Enter Hosted Zone ID:';
+            container.appendChild(hostedZoneLabel);
+
+            const hostedZoneInput = document.createElement('input');
+            hostedZoneInput.type = 'text';
+            hostedZoneInput.placeholder = 'Enter Hosted Zone ID';
+            container.appendChild(hostedZoneInput);
+
+            container.appendChild(document.createElement('br'));
+        
+            const button = document.createElement('button');
+            button.innerText = 'Host Domain';
+            button.style.padding = '10px 20px';
+            button.style.fontSize = '16px';
+            button.style.cursor = 'pointer';
+            button.style.backgroundColor = '#4CAF50';
+            button.style.color = 'white';
+            button.style.border = 'none';
+            button.style.borderRadius = '5px';
+        
+            button.addEventListener('mouseover', () => {
+                button.style.backgroundColor = '#45a049';
+            });
+        
+            button.addEventListener('mouseout', () => {
+                button.style.backgroundColor = '#4CAF50';
+            });
+        
+            container.appendChild(button);
+            document.body.appendChild(container);
+        
+            button.addEventListener('click', async function() {
+                const domain = domainInput.value;
+                const dns = dnsInput.value;
+                const hostedZoneId = hostedZoneInput.value;
+        
+                if (domain && dns && hostedZoneId) {
+                    alert(`You have selected the domain: ${domain}`);
+                    console.log('Setting up DNS...');
+                    
+                    try {
+                        let response = await fetch('https://0fba1caece0465a51/api/setup-dns', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ domain: domain, dns: dns, hosted_zone_id: hostedZoneId })
+                        });
+                        
+                        if (response.ok) {
+                            alert(`Domain '${domain}' hosted with DNS server '${dns}' successfully!`);
+                        } else {
+                            alert('Failed to set up DNS. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please try again.');
+                    }
+                    
+                    console.log('Domain hosting setup complete!');
+                } else {
+                    alert('Please fill in all the fields!');
+                }
+            });
+        }
+
         window.onload = loadPyodideAndRun;
     </script>
 </body>
